@@ -160,3 +160,323 @@ public class Person {
 }
 ```
 
+#### 单例模式应用场景
+
+- 多线程的线程池
+- 数据库的连接池
+- 系统环境信息
+- `ServltetContext`上下文对象
+
+### 原型模式 
+
+#### 特点
+
+- 原形模式应用创建重复的对象，同时也能保证性能
+- 本地向外部提供克隆体进行使用
+
+#### 示例代码
+
+##### `User`
+
+```java
+package com.mercymodest.prototype;
+
+import cn.hutool.core.bean.BeanUtil;
+import lombok.Builder;
+import lombok.Data;
+
+/**
+ * @author ZGH.MercyModest
+ * @version V1.0.0
+ */
+@Data
+@Builder
+public class User implements Cloneable {
+
+    /**
+     * id
+     */
+    private Integer id;
+
+    /**
+     * username
+     */
+    private String username;
+
+
+    public User(Integer id, String username) {
+        this.id = id;
+        this.username = username;
+    }
+
+    @Override
+    public User clone() {
+        try {
+            return BeanUtil.copyProperties(this, User.class);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
+```
+
+##### `SimpleMybatisCacheTest`
+
+```java
+package com.mercymodest.prototype;
+
+import cn.hutool.core.util.RandomUtil;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * @author ZGH.MercyModest
+ * @version V1.0.0
+ */
+public class SimpleMybatisCacheTest {
+
+
+    /**
+     * 简要本地缓存
+     * <pre>
+     *      key: {@link  User#getId()}
+     *      value: {@link  User#getUsername()}
+     *  </pre>
+     */
+    private final Map<Integer, User> CACHE_MAP = new HashMap<>(1 << 2);
+
+    /**
+     * 通过 {@code id} 获取用户
+     *
+     * @param id {@code  id}
+     * @return {@code User }
+     */
+    public User getUser(Integer id) {
+        if (Objects.isNull(id)) {
+            return null;
+        }
+        User user = CACHE_MAP.get(id);
+        if (Objects.isNull(user)) {
+            user = getUserFromDb(id);
+            CACHE_MAP.put(id, user);
+        }
+        return user.clone();
+    }
+
+    /**
+     * 模拟从数据库查询数据
+     *
+     * @param id {@code  id} 用户
+     * @return {@code User }
+     */
+    private User getUserFromDb(Integer id) {
+        return User.builder()
+                .id(id)
+                .username(RandomUtil.randomString(12))
+                .build();
+    }
+}
+```
+
+##### `PrototypeTest`
+
+```java
+package com.mercymodest.prototype;
+
+import cn.hutool.core.util.RandomUtil;
+
+/**
+ * @author ZGH.MercyModest
+ * @version V1.0.0
+ */
+public class PrototypeTest {
+    public static void main(String[] args) {
+
+        SimpleMybatisCacheTest simpleMybatisCacheTest = new SimpleMybatisCacheTest();
+
+        final Integer id = 1;
+        User first = simpleMybatisCacheTest.getUser(id);
+        System.out.println(first);
+        User second = simpleMybatisCacheTest.getUser(id);
+        System.out.println(second);
+        System.out.println(first == second);
+
+        System.out.println(simpleMybatisCacheTest.getUser(Math.abs(RandomUtil.randomInt())));
+    }
+}
+```
+
+##### 结果示例
+
+![image-20220302224024909](https://img.mercymodest.com/public/image-20220302224024909.png)
+
+#### 原型模式
+
+- Mybatis二级缓存
+
+### 工厂模式
+
+- 工厂模式提供一个创建对象的最佳方式。我们不必关系对象的创建细节，只需要根据不同情况获取不同的产品
+
+![image-20220302224507104](https://img.mercymodest.com/public/image-20220302224507104.png)
+
+#### 简单工厂
+
+![image-20220302224852916](https://img.mercymodest.com/public/image-20220302224852916.png)
+
+#### 工厂方法
+
+![image-20220302225034671](https://img.mercymodest.com/public/image-20220302225034671.png)
+
+#### 抽象工厂
+
+![image-20220302225134897](https://img.mercymodest.com/public/image-20220302225134897.png)
+
+#### 工厂模式的退化
+
+> 当抽象工厂模式的每个具体工厂类只创建一个产品对象时,也就只存一个产品等级结构时，抽象工厂模式退化成为工厂方法;当工厂方法模式中抽象工厂方法设计为静态方法时，工厂方法模式退化成简单工厂模式~
+
+#### 工厂模式应用场景
+
+- `NumberFormat` ,`SimplDateFormat`
+- `LoggerFactory`
+- `SqlSessionFactory`
+- `BeanFactory`
+
+### 建造者模式
+
+![image-20220303000630917](https://img.mercymodest.com/public/image-20220303000630917.png)
+
+#### 建造者模式应用场景
+
+- `StringBuilder`
+
+- `Lombok`
+
+  ```java
+  package com.mercymodest.prototype;
+  
+  import cn.hutool.core.bean.BeanUtil;
+  
+  public class User implements Cloneable {
+      private Integer id;
+      private String username;
+  
+      public User(Integer id, String username) {
+          this.id = id;
+          this.username = username;
+      }
+  
+      public User clone() {
+          try {
+              return (User)BeanUtil.copyProperties(this, User.class, new String[0]);
+          } catch (Exception var2) {
+              throw new RuntimeException(var2);
+          }
+      }
+  
+      public static User.UserBuilder builder() {
+          return new User.UserBuilder();
+      }
+  
+      public Integer getId() {
+          return this.id;
+      }
+  
+      public String getUsername() {
+          return this.username;
+      }
+  
+      public void setId(Integer id) {
+          this.id = id;
+      }
+  
+      public void setUsername(String username) {
+          this.username = username;
+      }
+  
+      public boolean equals(Object o) {
+          if (o == this) {
+              return true;
+          } else if (!(o instanceof User)) {
+              return false;
+          } else {
+              User other = (User)o;
+              if (!other.canEqual(this)) {
+                  return false;
+              } else {
+                  Object this$id = this.getId();
+                  Object other$id = other.getId();
+                  if (this$id == null) {
+                      if (other$id != null) {
+                          return false;
+                      }
+                  } else if (!this$id.equals(other$id)) {
+                      return false;
+                  }
+  
+                  Object this$username = this.getUsername();
+                  Object other$username = other.getUsername();
+                  if (this$username == null) {
+                      if (other$username != null) {
+                          return false;
+                      }
+                  } else if (!this$username.equals(other$username)) {
+                      return false;
+                  }
+  
+                  return true;
+              }
+          }
+      }
+  
+      protected boolean canEqual(Object other) {
+          return other instanceof User;
+      }
+  
+      public int hashCode() {
+          int PRIME = true;
+          int result = 1;
+          Object $id = this.getId();
+          int result = result * 59 + ($id == null ? 43 : $id.hashCode());
+          Object $username = this.getUsername();
+          result = result * 59 + ($username == null ? 43 : $username.hashCode());
+          return result;
+      }
+  
+      public String toString() {
+          return "User(id=" + this.getId() + ", username=" + this.getUsername() + ")";
+      }
+  
+      public static class UserBuilder {
+          private Integer id;
+          private String username;
+  
+          UserBuilder() {
+          }
+  
+          public User.UserBuilder id(Integer id) {
+              this.id = id;
+              return this;
+          }
+  
+          public User.UserBuilder username(String username) {
+              this.username = username;
+              return this;
+          }
+  
+          public User build() {
+              return new User(this.id, this.username);
+          }
+  
+          public String toString() {
+              return "User.UserBuilder(id=" + this.id + ", username=" + this.username + ")";
+          }
+      }
+  }
+  ```
+
+  
+
